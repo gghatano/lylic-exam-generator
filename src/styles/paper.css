@@ -1,0 +1,66 @@
+.paper {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.body-area {
+  position: relative;
+}
+
+.text-layer {
+  user-select: text;
+  white-space: pre-wrap;
+  font-family: 'Noto Serif JP', serif;
+  word-break: break-all;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.line-numbers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
+  pointer-events: none;
+  color: #aaa;
+  font-size: 12px;
+  text-align: right;
+}
+
+.line-numbers .line-number {
+  display: block;
+}
+
+.question-area {
+  border-top: 1px solid #333;
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.question-item {
+  margin-bottom: 12px;
+}
+
+.question-item .question-heading {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.question-item .question-text {
+  padding-left: 1em;
+}
+
+.paper-guide {
+  color: #aaa;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 20px;
+  line-height: 2;
+}
