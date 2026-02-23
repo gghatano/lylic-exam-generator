@@ -21,36 +21,39 @@ export const DEFAULT_LAYOUT: Layout = {
   exportScale: 2,
 }
 
+// Sample text with 2 spaces inserted before each underline start position
+// Original positions: 7, 66, 78 → after 1st insert: 7→9, 66→68 → after 2nd insert: 68→70, 78→80
 const SAMPLE_TEXT = [
-  '春はあけぼの。やうやう白くなりゆく山ぎは、すこしあかりて、紫だちたる雲のほそくたなびきたる。',
-  '夏は夜。月のころはさらなり、闇もなほ、蛍のおほく飛びちがひたる。また、ただ一つ二つなど、ほのかにうち光りて行くもをかし。雨など降るもをかし。',
-  '秋は夕暮れ。夕日のさして山の端いと近うなりたるに、烏の寝どころへ行くとて、三つ四つ、二つ三つなど飛び急ぐさへあはれなり。まいて雁などの連ねたるが、いと小さく見ゆるはいとをかし。日入り果てて、風の音、虫の音など、はた言ふべきにあらず。',
+  '春はあけぼの。  やうやう白くなりゆく山ぎは、すこしあかりて、紫だちたる雲のほそくたなびきたる。',
+  '夏は夜。月のころはさらなり、闇もなほ、  蛍のおほく飛びちがひたる。また、ただ一つ二つなど、ほのかにうち光りて行くもをかし。雨など降るもをかし。',
+  '秋は夕暮れ。夕日のさして山の端いと近うなりたるに、烏の寝どころへ行くとて、三つ四つ、二つ三つなど  飛び急ぐさへあはれなり。まいて雁などの連ねたるが、いと小さく見ゆるはいとをかし。日入り果てて、風の音、虫の音など、はた言ふべきにあらず。',
   '冬はつとめて。雪の降りたるは言ふべきにもあらず、霜のいと白きも、またさらでもいと寒きに、火など急ぎおこして、炭もて渡るもいとつきづきし。昼になりて、ぬるくゆるびもていけば、火桶の火も白き灰がちになりてわろし。',
 ].join('\n')
 
 export function createInitialState(): DocumentState {
   // Pre-populate with sample marks and questions
+  // Positions account for the 2-space padding before each underline
   nextId = 1
   const marks: Mark[] = [
     {
       id: generateMarkId(),
-      start: 7,
-      end: 20,
-      excerpt: buildExcerpt(SAMPLE_TEXT, 7, 20),
+      start: 9,
+      end: 22,
+      excerpt: buildExcerpt(SAMPLE_TEXT, 9, 22),
       question: '下線部①「やうやう白くなりゆく山ぎは」とは、どのような情景を描写しているか、簡潔に説明せよ。',
     },
     {
       id: generateMarkId(),
-      start: 66,
-      end: 78,
-      excerpt: buildExcerpt(SAMPLE_TEXT, 66, 78),
+      start: 70,
+      end: 82,
+      excerpt: buildExcerpt(SAMPLE_TEXT, 70, 82),
       question: '下線部②「蛍のおほく飛びちがひたる」の情景について、作者はどのような美意識を表しているか述べよ。',
     },
     {
       id: generateMarkId(),
-      start: 166,
-      end: 177,
-      excerpt: buildExcerpt(SAMPLE_TEXT, 166, 177),
+      start: 172,
+      end: 183,
+      excerpt: buildExcerpt(SAMPLE_TEXT, 172, 183),
       question: '下線部③の「さへ」の意味を説明し、作者の心情を述べよ。',
     },
   ]
@@ -63,6 +66,8 @@ export function createInitialState(): DocumentState {
     source: '（清少納言『枕草子』）',
   }
 }
+
+const SPACE_INSERT = '  ' // 2 half-width spaces inserted before underline start
 
 export function addMark(
   state: DocumentState,
@@ -82,17 +87,42 @@ export function addMark(
     return { error: '既存の傍線部と重なっています' }
   }
 
+  // Insert 2 spaces before the underline start to make room for the circled number
+  const insertAt = start
+  const shift = SPACE_INSERT.length
+  const newText = state.text.slice(0, insertAt) + SPACE_INSERT + state.text.slice(insertAt)
+
+  // Shift existing marks affected by the insertion
+  const shiftedMarks = state.marks.map((m) => {
+    let newStart = m.start
+    let newEnd = m.end
+    if (m.start >= insertAt) {
+      newStart += shift
+      newEnd += shift
+    } else if (m.end > insertAt) {
+      newEnd += shift
+    }
+    if (newStart === m.start && newEnd === m.end) return m
+    return {
+      ...m,
+      start: newStart,
+      end: newEnd,
+      excerpt: buildExcerpt(newText, newStart, newEnd),
+    }
+  })
+
   const mark: Mark = {
     id: generateMarkId(),
-    start,
-    end,
-    excerpt: buildExcerpt(state.text, start, end),
+    start: start + shift,
+    end: end + shift,
+    excerpt: buildExcerpt(newText, start + shift, end + shift),
     question: '',
   }
 
   return {
     ...state,
-    marks: [...state.marks, mark],
+    text: newText,
+    marks: [...shiftedMarks, mark],
   }
 }
 

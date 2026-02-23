@@ -37,16 +37,39 @@ describe('state', () => {
   })
 
   describe('addMark', () => {
-    it('adds a mark with correct excerpt', () => {
+    it('adds a mark with correct excerpt and inserts spaces', () => {
       const result = addMark(state, 0, 5)
       expect(isError(result)).toBe(false)
       if (!isError(result)) {
         expect(result.marks).toHaveLength(1)
-        expect(result.marks[0].start).toBe(0)
-        expect(result.marks[0].end).toBe(5)
+        // Mark is shifted by 2 due to space insertion
+        expect(result.marks[0].start).toBe(2)
+        expect(result.marks[0].end).toBe(7)
         expect(result.marks[0].excerpt).toBe('あいうえお')
         expect(result.marks[0].question).toBe('')
+        // Text has 2 spaces inserted at position 0
+        expect(result.text).toBe('  あいうえお\nかきくけこ\nさしすせそ')
       }
+    })
+
+    it('inserts spaces and shifts existing marks when needed', () => {
+      // text: "あいうえお\nかきくけこ\nさしすせそ"
+      // Add first mark at position 6-9 ("かきく")
+      const r1 = addMark(state, 6, 9)
+      if (isError(r1)) throw new Error('unexpected')
+      // Spaces inserted at 6: "あいうえお\n  かきくけこ\nさしすせそ"
+      // mark1: start=8, end=11
+
+      // Add second mark at position 0-3 ("あいう"), before the first mark
+      const r2 = addMark(r1, 0, 3)
+      if (isError(r2)) throw new Error('unexpected')
+      expect(r2.marks).toHaveLength(2)
+      // Spaces inserted at 0, first mark (start=8) shifts by 2
+      expect(r2.marks[0].start).toBe(10)
+      expect(r2.marks[0].end).toBe(13)
+      // Second mark: start=2, end=5
+      expect(r2.marks[1].start).toBe(2)
+      expect(r2.marks[1].end).toBe(5)
     })
 
     it('rejects empty selection', () => {
@@ -60,6 +83,8 @@ describe('state', () => {
     it('rejects overlapping mark', () => {
       const r1 = addMark(state, 0, 5)
       if (isError(r1)) throw new Error('unexpected')
+      // After first mark, text is "  あいうえお\n..." and mark is at [2,7]
+      // Try overlapping range (positions in new text)
       const r2 = addMark(r1, 3, 8)
       expect(isError(r2)).toBe(true)
       if (isError(r2)) {
@@ -69,15 +94,18 @@ describe('state', () => {
 
     it('rejects when 30 marks already exist', () => {
       // Build a long text with enough non-overlapping ranges
-      const chars = Array.from({ length: 100 }, (_, i) => String.fromCodePoint(0x3042 + i)).join('')
+      // Each mark adds 2 spaces, so we need plenty of room
+      const chars = Array.from({ length: 300 }, (_, i) => String.fromCodePoint(0x3042 + (i % 50))).join('')
       let s: DocumentState = { ...state, text: chars }
       for (let i = 0; i < 30; i++) {
-        const r = addMark(s, i * 3, i * 3 + 2)
-        if (isError(r)) throw new Error(`unexpected error at mark ${i}`)
+        // Use wide spacing to account for space insertions
+        const start = i * 8
+        const r = addMark(s, start, start + 2)
+        if (isError(r)) throw new Error(`unexpected error at mark ${i}: ${r.error}`)
         s = r
       }
       expect(s.marks).toHaveLength(30)
-      const r31 = addMark(s, 90, 92)
+      const r31 = addMark(s, 250, 252)
       expect(isError(r31)).toBe(true)
       if (isError(r31)) {
         expect(r31.error).toMatch(/最大30個/)
@@ -87,7 +115,8 @@ describe('state', () => {
     it('allows non-overlapping marks', () => {
       const r1 = addMark(state, 0, 3)
       if (isError(r1)) throw new Error('unexpected')
-      const r2 = addMark(r1, 6, 9)
+      // After first mark, positions shifted. Use a position well after the first mark.
+      const r2 = addMark(r1, 8, 11)
       expect(isError(r2)).toBe(false)
       if (!isError(r2)) {
         expect(r2.marks).toHaveLength(2)
