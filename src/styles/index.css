@@ -225,6 +225,23 @@ body {
   color: #fff;
 }
 
+.btn-action {
+  display: inline-block;
+  padding: 6px 16px;
+  font-size: 13px;
+  border: 1px solid #4a90d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #4a90d9;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn-action:hover {
+  background: #4a90d9;
+  color: #fff;
+}
+
 /* Toast */
 .toast {
   position: fixed;
@@ -275,4 +292,163 @@ body {
 
 .selection-popup button:hover {
   background: #3a7bc8;
+}
+
+/* Answer type selector (right pane) */
+.answer-type-section {
+  margin-top: 8px;
+  border-top: 1px solid #eee;
+  padding-top: 6px;
+}
+
+.answer-type-radios {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.answer-type-label {
+  font-size: 12px;
+  color: #666;
+  margin-right: 2px;
+}
+
+.answer-type-radios label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.answer-type-radios input[type='radio'] {
+  margin: 0;
+}
+
+/* Choice editor (right pane) */
+.choice-editor {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.choice-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.choice-row .choice-label {
+  font-size: 13px;
+  min-width: 1.5em;
+  text-align: center;
+}
+
+.choice-row input[type='text'] {
+  flex: 1;
+  padding: 3px 6px;
+  font-size: 13px;
+  font-family: 'Noto Serif JP', serif;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.choice-row .choice-remove {
+  padding: 2px 6px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  color: #d9534f;
+}
+
+.choice-row .choice-remove:hover {
+  background: #fef0f0;
+}
+
+.choice-add {
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px dashed #ccc;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  color: #4a90d9;
+  align-self: flex-start;
+}
+
+.choice-add:hover {
+  background: #f0f5ff;
+}
+
+/* Mobile tabs - hidden on desktop */
+.mobile-tabs {
+  display: none;
+}
+
+/* Responsive: mobile tab switching */
+@media (max-width: 768px) {
+  .mobile-tabs {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .mobile-tabs button {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 14px;
+    font-family: 'Noto Serif JP', serif;
+    border: none;
+    background: #fafafa;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+
+  .mobile-tabs button.active {
+    color: #4a90d9;
+    border-bottom-color: #4a90d9;
+    font-weight: bold;
+  }
+
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .left-pane,
+  .center-pane,
+  .right-pane {
+    max-height: none;
+  }
+
+  .left-pane {
+    border-right: none;
+  }
+
+  .right-pane {
+    border-left: none;
+  }
+
+  .app[data-active-tab='input'] > .center-pane,
+  .app[data-active-tab='input'] > .right-pane {
+    display: none;
+  }
+
+  .app[data-active-tab='preview'] > .left-pane,
+  .app[data-active-tab='preview'] > .right-pane {
+    display: none;
+  }
+
+  .app[data-active-tab='questions'] > .left-pane,
+  .app[data-active-tab='questions'] > .center-pane {
+    display: none;
+  }
 }

@@ -1,15 +1,24 @@
 import { useReducer } from 'react'
-import type { DocumentState, Layout } from '../core/types'
+import type { AnswerType, DocumentState, Layout } from '../core/types'
 import {
   addFreeQuestion,
+  addFreeQuestionChoice,
   addMark,
+  addMarkChoice,
   createInitialState,
   isError,
   removeFreeQuestion,
+  removeFreeQuestionChoice,
   removeMark,
+  removeMarkChoice,
+  reorderQuestion,
   setText,
   updateFreeQuestion,
+  updateFreeQuestionAnswerType,
+  updateFreeQuestionChoice,
   updateLayout,
+  updateMarkAnswerType,
+  updateMarkChoice,
   updateMarkQuestion,
   updateSource,
 } from '../core/state'
@@ -26,6 +35,15 @@ export type Action =
   | { type: 'REMOVE_FREE_QUESTION'; id: string }
   | { type: 'UPDATE_FREE_QUESTION'; id: string; question: string }
   | { type: 'SET_SOURCE'; source: string }
+  | { type: 'REORDER_QUESTION'; id: string; direction: 'up' | 'down' }
+  | { type: 'UPDATE_MARK_ANSWER_TYPE'; markId: string; answerType: AnswerType }
+  | { type: 'UPDATE_FREE_QUESTION_ANSWER_TYPE'; id: string; answerType: AnswerType }
+  | { type: 'UPDATE_MARK_CHOICE'; markId: string; index: number; value: string }
+  | { type: 'UPDATE_FREE_QUESTION_CHOICE'; id: string; index: number; value: string }
+  | { type: 'ADD_MARK_CHOICE'; markId: string }
+  | { type: 'ADD_FREE_QUESTION_CHOICE'; id: string }
+  | { type: 'REMOVE_MARK_CHOICE'; markId: string; index: number }
+  | { type: 'REMOVE_FREE_QUESTION_CHOICE'; id: string; index: number }
 
 type ReducerResult = {
   state: DocumentState
@@ -53,7 +71,10 @@ function reducer(current: ReducerResult, action: Action): ReducerResult {
     case 'SET_TEXT':
       return { state: setText(current.state, action.text), error: null }
     case 'CLEAR_MARKS':
-      return { state: { ...current.state, marks: [], freeQuestions: [] }, error: null }
+      return {
+        state: { ...current.state, marks: [], freeQuestions: [], questionOrder: [] },
+        error: null,
+      }
     case 'CLEAR_ERROR':
       return { ...current, error: null }
     case 'ADD_FREE_QUESTION':
@@ -67,6 +88,42 @@ function reducer(current: ReducerResult, action: Action): ReducerResult {
       }
     case 'SET_SOURCE':
       return { state: updateSource(current.state, action.source), error: null }
+    case 'REORDER_QUESTION':
+      return { state: reorderQuestion(current.state, action.id, action.direction), error: null }
+    case 'UPDATE_MARK_ANSWER_TYPE':
+      return {
+        state: updateMarkAnswerType(current.state, action.markId, action.answerType),
+        error: null,
+      }
+    case 'UPDATE_FREE_QUESTION_ANSWER_TYPE':
+      return {
+        state: updateFreeQuestionAnswerType(current.state, action.id, action.answerType),
+        error: null,
+      }
+    case 'UPDATE_MARK_CHOICE':
+      return {
+        state: updateMarkChoice(current.state, action.markId, action.index, action.value),
+        error: null,
+      }
+    case 'UPDATE_FREE_QUESTION_CHOICE':
+      return {
+        state: updateFreeQuestionChoice(current.state, action.id, action.index, action.value),
+        error: null,
+      }
+    case 'ADD_MARK_CHOICE':
+      return { state: addMarkChoice(current.state, action.markId), error: null }
+    case 'ADD_FREE_QUESTION_CHOICE':
+      return { state: addFreeQuestionChoice(current.state, action.id), error: null }
+    case 'REMOVE_MARK_CHOICE':
+      return {
+        state: removeMarkChoice(current.state, action.markId, action.index),
+        error: null,
+      }
+    case 'REMOVE_FREE_QUESTION_CHOICE':
+      return {
+        state: removeFreeQuestionChoice(current.state, action.id, action.index),
+        error: null,
+      }
   }
 }
 
