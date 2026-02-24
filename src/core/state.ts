@@ -1,14 +1,22 @@
 import type { AnswerType, DocumentState, FreeQuestion, Layout, Mark } from './types'
 import { buildExcerpt, isOverlapping } from './marks'
 
-let nextId = 1
-
-export function generateMarkId(): string {
-  return `m${nextId++}`
+function randomId(): string {
+  return Math.random().toString(36).slice(2, 10)
 }
 
-export function resetMarkIdCounter(n = 1): void {
-  nextId = n
+export function generateMarkId(): string {
+  return `m_${randomId()}`
+}
+
+export function generateFreeQuestionId(): string {
+  return `fq_${randomId()}`
+}
+
+/** @deprecated No-op: IDs are now random */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function resetMarkIdCounter(_n = 1): void {
+  // no-op
 }
 
 export const DEFAULT_LAYOUT: Layout = {
@@ -32,7 +40,6 @@ const SAMPLE_TEXT = [
 export function createInitialState(): DocumentState {
   // Pre-populate with tutorial sample marks
   // Positions account for the 3-space padding before each underline
-  nextId = 1
   const marks: Mark[] = [
     {
       id: generateMarkId(),
@@ -136,7 +143,7 @@ export function removeMark(state: DocumentState, markId: string): DocumentState 
 
 export function addFreeQuestion(state: DocumentState): DocumentState {
   const fq: FreeQuestion = {
-    id: `fq${nextId++}`,
+    id: generateFreeQuestionId(),
     question: '',
     answerType: 'long',
     choices: [],
