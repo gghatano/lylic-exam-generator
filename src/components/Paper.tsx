@@ -1,7 +1,50 @@
 import { type RefObject, useEffect } from 'react'
-import type { DocumentState } from '../core/types.ts'
+import type { AnswerType, DocumentState } from '../core/types.ts'
 import { toKanjiNumber } from '../core/kanjiNumber.ts'
 import { toCircledNumber, buildNumberByPosition } from '../core/marks.ts'
+
+function AnswerArea({ answerType, choices }: { answerType: AnswerType; choices: string[] }) {
+  switch (answerType) {
+    case 'long':
+      return (
+        <div className="answer-area answer-area-long">
+          <span className="answer-label">（回答）</span>
+          <div className="answer-line" />
+          <div className="answer-line" />
+        </div>
+      )
+    case 'short':
+      return (
+        <div className="answer-area answer-area-short">
+          <span className="answer-label">（回答）</span>
+          <div className="answer-line" />
+        </div>
+      )
+    case 'word':
+      return (
+        <div className="answer-area answer-area-word">
+          <span className="answer-label">（回答）</span>
+          <div className="answer-line-short" />
+        </div>
+      )
+    case 'choice':
+      return (
+        <div className="answer-area answer-area-choice">
+          <div className="choice-list">
+            {choices.map((ch, i) => (
+              <span key={i} className="choice-item">
+                {String.fromCodePoint(0x30a2 + i * 2)}{'\u3000'}{ch || '\u3000'}
+              </span>
+            ))}
+          </div>
+          <div className="answer-area-word">
+            <span className="answer-label">（回答）</span>
+            <div className="answer-line-short" />
+          </div>
+        </div>
+      )
+  }
+}
 
 type PaperProps = {
   state: DocumentState
@@ -28,7 +71,7 @@ function renderTextLayer(textLayerEl: HTMLDivElement, text: string) {
 }
 
 export function Paper({ state, paperRef, bodyAreaRef, textLayerRef, overlayRef }: PaperProps) {
-  const { text, marks, freeQuestions, layout, source } = state
+  const { text, marks, freeQuestions, questionOrder, layout, source } = state
   const { paperWidthPx, paperHeightPx, marginPx, fontSizePx, lineHeight, showLineNumbers } = layout
 
   const lines = text.split('\n')
@@ -44,8 +87,8 @@ export function Paper({ state, paperRef, bodyAreaRef, textLayerRef, overlayRef }
   }, [text, textLayerRef])
 
   const numberMap = buildNumberByPosition(marks)
-  const sorted = [...marks].sort((a, b) => a.start - b.start)
-  const markCount = marks.length
+  const markMap = new Map(marks.map((m) => [m.id, m]))
+  const fqMap = new Map(freeQuestions.map((fq) => [fq.id, fq]))
 
   return (
     <div
@@ -60,6 +103,11 @@ export function Paper({ state, paperRef, bodyAreaRef, textLayerRef, overlayRef }
         lineHeight,
       }}
     >
+      <div className="exam-header">
+        <span className="exam-number">１</span>
+        <span>次の文章を読み、以下の問いに答えよ。</span>
+      </div>
+
       <div className="body-area" ref={bodyAreaRef} style={{ position: 'relative' }}>
         {showLineNumbers && (
           <div
@@ -109,29 +157,39 @@ export function Paper({ state, paperRef, bodyAreaRef, textLayerRef, overlayRef }
         </div>
       )}
 
-      {(marks.length > 0 || freeQuestions.length > 0) && (
+      {questionOrder.length > 0 && (
         <div className="question-area">
-          {sorted.map((mark) => {
-            const num = numberMap.get(mark.id) ?? 1
-            return (
-              <div key={mark.id} className="question-item">
-                <div className="question-heading">問{toKanjiNumber(num)}</div>
-                <div className="question-text">
-                  {mark.question || `下線部${toCircledNumber(num)}について説明せよ。`}
+          {questionOrder.map((id, orderIdx) => {
+            const mark = markMap.get(id)
+            const fq = fqMap.get(id)
+            const questionNum = orderIdx + 1
+
+            if (mark) {
+              const circledNum = numberMap.get(mark.id) ?? 1
+              return (
+                <div key={mark.id} className="question-item">
+                  <div className="question-heading">問{toKanjiNumber(questionNum)}</div>
+                  <div className="question-text">
+                    {mark.question || `下線部${toCircledNumber(circledNum)}について説明せよ。`}
+                  </div>
+                  <AnswerArea answerType={mark.answerType} choices={mark.choices} />
                 </div>
-              </div>
-            )
-          })}
-          {freeQuestions.map((fq, i) => {
-            const num = markCount + i + 1
-            return (
-              <div key={fq.id} className="question-item">
-                <div className="question-heading">問{toKanjiNumber(num)}</div>
-                <div className="question-text">
-                  {fq.question || '（問題文を入力してください）'}
+              )
+            }
+
+            if (fq) {
+              return (
+                <div key={fq.id} className="question-item">
+                  <div className="question-heading">問{toKanjiNumber(questionNum)}</div>
+                  <div className="question-text">
+                    {fq.question || '（問題文を入力してください）'}
+                  </div>
+                  <AnswerArea answerType={fq.answerType} choices={fq.choices} />
                 </div>
-              </div>
-            )
+              )
+            }
+
+            return null
           })}
         </div>
       )}

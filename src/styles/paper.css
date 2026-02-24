@@ -5,6 +5,24 @@
   flex-shrink: 0;
 }
 
+.exam-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: inherit;
+}
+
+.exam-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #333;
+  padding: 2px 8px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
 .body-area {
   position: relative;
 }
@@ -55,6 +73,48 @@
 
 .question-item .question-text {
   padding-left: 1em;
+}
+
+/* Answer area */
+.answer-area {
+  margin-top: 8px;
+  padding-left: 1em;
+}
+
+.answer-label {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.answer-line {
+  width: 100%;
+  border-bottom: 1px solid #333;
+  height: 2em;
+}
+
+.answer-area-word {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.answer-line-short {
+  width: 40%;
+  border-bottom: 1px solid #333;
+  height: 2em;
+}
+
+.choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin-bottom: 4px;
+  padding-left: 1em;
+}
+
+.choice-item {
+  white-space: nowrap;
 }
 
 .paper-guide {

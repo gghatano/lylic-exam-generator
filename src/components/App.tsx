@@ -10,6 +10,8 @@ import { MarkListPane } from './MarkListPane.tsx'
 import { SelectionPopup } from './SelectionPopup.tsx'
 import { Toast } from './Toast.tsx'
 
+type MobileTab = 'input' | 'preview' | 'questions'
+
 function App() {
   const { state, error, dispatch } = useDocumentState()
 
@@ -18,6 +20,7 @@ function App() {
   const textLayerRef = useRef<HTMLDivElement | null>(null)
   const overlayRef = useRef<SVGSVGElement | null>(null)
 
+  const [activeTab, setActiveTab] = useState<MobileTab>('preview')
   const [popup, setPopup] = useState<{ x: number; y: number; start: number; end: number } | null>(
     null,
   )
@@ -128,7 +131,28 @@ function App() {
   }, [])
 
   return (
-    <div className="app">
+    <div className="app" data-active-tab={activeTab}>
+      <div className="mobile-tabs">
+        <button
+          className={activeTab === 'input' ? 'active' : ''}
+          onClick={() => setActiveTab('input')}
+        >
+          入力
+        </button>
+        <button
+          className={activeTab === 'preview' ? 'active' : ''}
+          onClick={() => setActiveTab('preview')}
+        >
+          プレビュー
+        </button>
+        <button
+          className={activeTab === 'questions' ? 'active' : ''}
+          onClick={() => setActiveTab('questions')}
+        >
+          設問
+        </button>
+      </div>
+
       <InputPane state={state} dispatch={dispatch} onExport={handleExport} exporting={exporting} />
 
       <div className="center-pane" onMouseUp={handleMouseUp}>

@@ -1,4 +1,4 @@
-import type { DocumentState, FreeQuestion, Layout, Mark } from './types'
+import type { AnswerType, DocumentState, FreeQuestion, Layout, Mark } from './types'
 import { buildExcerpt, isOverlapping } from './marks'
 
 let nextId = 1
@@ -21,40 +21,36 @@ export const DEFAULT_LAYOUT: Layout = {
   exportScale: 2,
 }
 
-// Sample text with 2 spaces inserted before each underline start position
-// Original positions: 7, 66, 78 → after 1st insert: 7→9, 66→68 → after 2nd insert: 68→70, 78→80
+// Tutorial sample text with 3 spaces inserted before each underline
 const SAMPLE_TEXT = [
-  '春はあけぼの。  やうやう白くなりゆく山ぎは、すこしあかりて、紫だちたる雲のほそくたなびきたる。',
-  '夏は夜。月のころはさらなり、闇もなほ、  蛍のおほく飛びちがひたる。また、ただ一つ二つなど、ほのかにうち光りて行くもをかし。雨など降るもをかし。',
-  '秋は夕暮れ。夕日のさして山の端いと近うなりたるに、烏の寝どころへ行くとて、三つ四つ、二つ三つなど  飛び急ぐさへあはれなり。まいて雁などの連ねたるが、いと小さく見ゆるはいとをかし。日入り果てて、風の音、虫の音など、はた言ふべきにあらず。',
-  '冬はつとめて。雪の降りたるは言ふべきにもあらず、霜のいと白きも、またさらでもいと寒きに、火など急ぎおこして、炭もて渡るもいとつきづきし。昼になりて、ぬるくゆるびもていけば、火桶の火も白き灰がちになりてわろし。',
+  'このツールでは、   国語の試験問題を作成できます。',
+  '左の入力欄にテキストを入力し「反映」ボタンを押すと、ここに本文が表示されます。',
+  '本文中の   テキストをドラッグで選択すると、下線と番号が付きます。',
+  '右側の設問一覧で、各問題の問題文を編集できます。',
 ].join('\n')
 
 export function createInitialState(): DocumentState {
-  // Pre-populate with sample marks and questions
-  // Positions account for the 2-space padding before each underline
+  // Pre-populate with tutorial sample marks
+  // Positions account for the 3-space padding before each underline
   nextId = 1
   const marks: Mark[] = [
     {
       id: generateMarkId(),
-      start: 9,
-      end: 22,
-      excerpt: buildExcerpt(SAMPLE_TEXT, 9, 22),
-      question: '下線部①「やうやう白くなりゆく山ぎは」とは、どのような情景を描写しているか、簡潔に説明せよ。',
+      start: 11,
+      end: 18,
+      excerpt: buildExcerpt(SAMPLE_TEXT, 11, 18),
+      question: '下線部①「国語の試験問題」とはどのようなものか、具体例を挙げて説明せよ。',
+      answerType: 'long',
+      choices: [],
     },
     {
       id: generateMarkId(),
-      start: 70,
-      end: 82,
-      excerpt: buildExcerpt(SAMPLE_TEXT, 70, 82),
-      question: '下線部②「蛍のおほく飛びちがひたる」の情景について、作者はどのような美意識を表しているか述べよ。',
-    },
-    {
-      id: generateMarkId(),
-      start: 172,
-      end: 183,
-      excerpt: buildExcerpt(SAMPLE_TEXT, 172, 183),
-      question: '下線部③の「さへ」の意味を説明し、作者の心情を述べよ。',
+      start: 74,
+      end: 86,
+      excerpt: buildExcerpt(SAMPLE_TEXT, 74, 86),
+      question: '下線部②「テキストをドラッグで選択」の操作手順を説明せよ。',
+      answerType: 'long',
+      choices: [],
     },
   ]
 
@@ -62,12 +58,13 @@ export function createInitialState(): DocumentState {
     text: SAMPLE_TEXT,
     marks,
     freeQuestions: [],
+    questionOrder: marks.map((m) => m.id),
     layout: { ...DEFAULT_LAYOUT },
-    source: '（清少納言『枕草子』）',
+    source: '（使い方ガイド）',
   }
 }
 
-const SPACE_INSERT = '  ' // 2 half-width spaces inserted before underline start
+const SPACE_INSERT = '   ' // 3 half-width spaces inserted before underline start
 
 export function addMark(
   state: DocumentState,
@@ -87,7 +84,7 @@ export function addMark(
     return { error: '既存の傍線部と重なっています' }
   }
 
-  // Insert 2 spaces before the underline start to make room for the circled number
+  // Insert 3 spaces before the underline start to make room for the circled number
   const insertAt = start
   const shift = SPACE_INSERT.length
   const newText = state.text.slice(0, insertAt) + SPACE_INSERT + state.text.slice(insertAt)
@@ -117,12 +114,15 @@ export function addMark(
     end: end + shift,
     excerpt: buildExcerpt(newText, start + shift, end + shift),
     question: '',
+    answerType: 'long',
+    choices: [],
   }
 
   return {
     ...state,
     text: newText,
     marks: [...shiftedMarks, mark],
+    questionOrder: [...state.questionOrder, mark.id],
   }
 }
 
@@ -130,6 +130,7 @@ export function removeMark(state: DocumentState, markId: string): DocumentState 
   return {
     ...state,
     marks: state.marks.filter((m) => m.id !== markId),
+    questionOrder: state.questionOrder.filter((id) => id !== markId),
   }
 }
 
@@ -137,10 +138,13 @@ export function addFreeQuestion(state: DocumentState): DocumentState {
   const fq: FreeQuestion = {
     id: `fq${nextId++}`,
     question: '',
+    answerType: 'long',
+    choices: [],
   }
   return {
     ...state,
     freeQuestions: [...state.freeQuestions, fq],
+    questionOrder: [...state.questionOrder, fq.id],
   }
 }
 
@@ -148,6 +152,7 @@ export function removeFreeQuestion(state: DocumentState, id: string): DocumentSt
   return {
     ...state,
     freeQuestions: state.freeQuestions.filter((fq) => fq.id !== id),
+    questionOrder: state.questionOrder.filter((qid) => qid !== id),
   }
 }
 
@@ -191,6 +196,143 @@ export function setText(state: DocumentState, text: string): DocumentState {
     text: normalized,
     marks: [],
     freeQuestions: [],
+    questionOrder: [],
+  }
+}
+
+export function reorderQuestion(
+  state: DocumentState,
+  id: string,
+  direction: 'up' | 'down',
+): DocumentState {
+  const order = [...state.questionOrder]
+  const idx = order.indexOf(id)
+  if (idx < 0) return state
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+  if (swapIdx < 0 || swapIdx >= order.length) return state
+  ;[order[idx], order[swapIdx]] = [order[swapIdx], order[idx]]
+  return { ...state, questionOrder: order }
+}
+
+// --- answerType / choices functions ---
+
+const DEFAULT_CHOICES = ['', '', '', '']
+
+function switchAnswerType(
+  current: AnswerType,
+  next: AnswerType,
+  currentChoices: string[],
+): string[] {
+  if (next === 'choice' && current !== 'choice') return [...DEFAULT_CHOICES]
+  if (next !== 'choice' && current === 'choice') return []
+  return currentChoices
+}
+
+export function updateMarkAnswerType(
+  state: DocumentState,
+  markId: string,
+  answerType: AnswerType,
+): DocumentState {
+  return {
+    ...state,
+    marks: state.marks.map((m) =>
+      m.id === markId
+        ? { ...m, answerType, choices: switchAnswerType(m.answerType, answerType, m.choices) }
+        : m,
+    ),
+  }
+}
+
+export function updateFreeQuestionAnswerType(
+  state: DocumentState,
+  id: string,
+  answerType: AnswerType,
+): DocumentState {
+  return {
+    ...state,
+    freeQuestions: state.freeQuestions.map((fq) =>
+      fq.id === id
+        ? { ...fq, answerType, choices: switchAnswerType(fq.answerType, answerType, fq.choices) }
+        : fq,
+    ),
+  }
+}
+
+export function updateMarkChoice(
+  state: DocumentState,
+  markId: string,
+  index: number,
+  value: string,
+): DocumentState {
+  return {
+    ...state,
+    marks: state.marks.map((m) => {
+      if (m.id !== markId) return m
+      const choices = [...m.choices]
+      choices[index] = value
+      return { ...m, choices }
+    }),
+  }
+}
+
+export function updateFreeQuestionChoice(
+  state: DocumentState,
+  id: string,
+  index: number,
+  value: string,
+): DocumentState {
+  return {
+    ...state,
+    freeQuestions: state.freeQuestions.map((fq) => {
+      if (fq.id !== id) return fq
+      const choices = [...fq.choices]
+      choices[index] = value
+      return { ...fq, choices }
+    }),
+  }
+}
+
+export function addMarkChoice(state: DocumentState, markId: string): DocumentState {
+  return {
+    ...state,
+    marks: state.marks.map((m) => {
+      if (m.id !== markId || m.choices.length >= 6) return m
+      return { ...m, choices: [...m.choices, ''] }
+    }),
+  }
+}
+
+export function addFreeQuestionChoice(state: DocumentState, id: string): DocumentState {
+  return {
+    ...state,
+    freeQuestions: state.freeQuestions.map((fq) => {
+      if (fq.id !== id || fq.choices.length >= 6) return fq
+      return { ...fq, choices: [...fq.choices, ''] }
+    }),
+  }
+}
+
+export function removeMarkChoice(state: DocumentState, markId: string, index: number): DocumentState {
+  return {
+    ...state,
+    marks: state.marks.map((m) => {
+      if (m.id !== markId || m.choices.length <= 2) return m
+      return { ...m, choices: m.choices.filter((_, i) => i !== index) }
+    }),
+  }
+}
+
+export function removeFreeQuestionChoice(
+  state: DocumentState,
+  id: string,
+  index: number,
+): DocumentState {
+  return {
+    ...state,
+    freeQuestions: state.freeQuestions.map((fq) => {
+      if (fq.id !== id || fq.choices.length <= 2) return fq
+      return { ...fq, choices: fq.choices.filter((_, i) => i !== index) }
+    }),
   }
 }
 

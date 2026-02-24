@@ -1,14 +1,20 @@
+export type AnswerType = 'long' | 'short' | 'word' | 'choice'
+
 export type Mark = {
   id: string
   start: number
   end: number
   excerpt: string
   question: string
+  answerType: AnswerType
+  choices: string[]
 }
 
 export type FreeQuestion = {
   id: string
   question: string
+  answerType: AnswerType
+  choices: string[]
 }
 
 export type Layout = {
@@ -25,6 +31,7 @@ export type DocumentState = {
   text: string
   marks: Mark[]
   freeQuestions: FreeQuestion[]
+  questionOrder: string[]
   layout: Layout
   source: string
 }

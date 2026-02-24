@@ -11,6 +11,15 @@ import {
   removeFreeQuestion,
   updateFreeQuestion,
   updateSource,
+  reorderQuestion,
+  updateMarkAnswerType,
+  updateFreeQuestionAnswerType,
+  updateMarkChoice,
+  updateFreeQuestionChoice,
+  addMarkChoice,
+  addFreeQuestionChoice,
+  removeMarkChoice,
+  removeFreeQuestionChoice,
 } from '../src/core/state'
 import type { DocumentState } from '../src/core/types'
 
@@ -23,6 +32,7 @@ describe('state', () => {
       text: 'あいうえお\nかきくけこ\nさしすせそ',
       marks: [],
       freeQuestions: [],
+      questionOrder: [],
       layout: {
         paperWidthPx: 794,
         paperHeightPx: 1123,
@@ -42,13 +52,13 @@ describe('state', () => {
       expect(isError(result)).toBe(false)
       if (!isError(result)) {
         expect(result.marks).toHaveLength(1)
-        // Mark is shifted by 2 due to space insertion
-        expect(result.marks[0].start).toBe(2)
-        expect(result.marks[0].end).toBe(7)
+        // Mark is shifted by 3 due to space insertion
+        expect(result.marks[0].start).toBe(3)
+        expect(result.marks[0].end).toBe(8)
         expect(result.marks[0].excerpt).toBe('あいうえお')
         expect(result.marks[0].question).toBe('')
-        // Text has 2 spaces inserted at position 0
-        expect(result.text).toBe('  あいうえお\nかきくけこ\nさしすせそ')
+        // Text has 3 spaces inserted at position 0
+        expect(result.text).toBe('   あいうえお\nかきくけこ\nさしすせそ')
       }
     })
 
@@ -57,19 +67,19 @@ describe('state', () => {
       // Add first mark at position 6-9 ("かきく")
       const r1 = addMark(state, 6, 9)
       if (isError(r1)) throw new Error('unexpected')
-      // Spaces inserted at 6: "あいうえお\n  かきくけこ\nさしすせそ"
-      // mark1: start=8, end=11
+      // Spaces inserted at 6: "あいうえお\n   かきくけこ\nさしすせそ"
+      // mark1: start=9, end=12
 
       // Add second mark at position 0-3 ("あいう"), before the first mark
       const r2 = addMark(r1, 0, 3)
       if (isError(r2)) throw new Error('unexpected')
       expect(r2.marks).toHaveLength(2)
-      // Spaces inserted at 0, first mark (start=8) shifts by 2
-      expect(r2.marks[0].start).toBe(10)
-      expect(r2.marks[0].end).toBe(13)
-      // Second mark: start=2, end=5
-      expect(r2.marks[1].start).toBe(2)
-      expect(r2.marks[1].end).toBe(5)
+      // Spaces inserted at 0, first mark (start=9) shifts by 3
+      expect(r2.marks[0].start).toBe(12)
+      expect(r2.marks[0].end).toBe(15)
+      // Second mark: start=3, end=6
+      expect(r2.marks[1].start).toBe(3)
+      expect(r2.marks[1].end).toBe(6)
     })
 
     it('rejects empty selection', () => {
@@ -83,9 +93,9 @@ describe('state', () => {
     it('rejects overlapping mark', () => {
       const r1 = addMark(state, 0, 5)
       if (isError(r1)) throw new Error('unexpected')
-      // After first mark, text is "  あいうえお\n..." and mark is at [2,7]
+      // After first mark, text is "   あいうえお\n..." and mark is at [3,8]
       // Try overlapping range (positions in new text)
-      const r2 = addMark(r1, 3, 8)
+      const r2 = addMark(r1, 4, 9)
       expect(isError(r2)).toBe(true)
       if (isError(r2)) {
         expect(r2.error).toMatch(/重なっています/)
@@ -212,6 +222,205 @@ describe('state', () => {
     it('sets source text', () => {
       const result = updateSource(state, '（清少納言『枕草子』）')
       expect(result.source).toBe('（清少納言『枕草子』）')
+    })
+  })
+
+  describe('questionOrder', () => {
+    it('addMark appends mark id to questionOrder', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      expect(r1.questionOrder).toEqual([r1.marks[0].id])
+    })
+
+    it('addFreeQuestion appends fq id to questionOrder', () => {
+      const r1 = addFreeQuestion(state)
+      expect(r1.questionOrder).toEqual([r1.freeQuestions[0].id])
+    })
+
+    it('removeMark removes from questionOrder', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const id = r1.marks[0].id
+      const r2 = removeMark(r1, id)
+      expect(r2.questionOrder).toEqual([])
+    })
+
+    it('removeFreeQuestion removes from questionOrder', () => {
+      const r1 = addFreeQuestion(state)
+      const id = r1.freeQuestions[0].id
+      const r2 = removeFreeQuestion(r1, id)
+      expect(r2.questionOrder).toEqual([])
+    })
+
+    it('setText clears questionOrder', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = setText(r1, '新テキスト')
+      expect(r2.questionOrder).toEqual([])
+    })
+  })
+
+  describe('reorderQuestion', () => {
+    it('moves a question up', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = addFreeQuestion(r1)
+      const markId = r2.marks[0].id
+      const fqId = r2.freeQuestions[0].id
+      expect(r2.questionOrder).toEqual([markId, fqId])
+
+      const r3 = reorderQuestion(r2, fqId, 'up')
+      expect(r3.questionOrder).toEqual([fqId, markId])
+    })
+
+    it('moves a question down', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = addFreeQuestion(r1)
+      const markId = r2.marks[0].id
+      const fqId = r2.freeQuestions[0].id
+
+      const r3 = reorderQuestion(r2, markId, 'down')
+      expect(r3.questionOrder).toEqual([fqId, markId])
+    })
+
+    it('does nothing when moving first item up', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = addFreeQuestion(r1)
+      const markId = r2.marks[0].id
+
+      const r3 = reorderQuestion(r2, markId, 'up')
+      expect(r3.questionOrder).toEqual(r2.questionOrder)
+    })
+
+    it('does nothing when moving last item down', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = addFreeQuestion(r1)
+      const fqId = r2.freeQuestions[0].id
+
+      const r3 = reorderQuestion(r2, fqId, 'down')
+      expect(r3.questionOrder).toEqual(r2.questionOrder)
+    })
+  })
+
+  describe('answerType', () => {
+    it('addMark defaults answerType to long and choices to empty', () => {
+      const r = addMark(state, 0, 3)
+      if (isError(r)) throw new Error('unexpected')
+      expect(r.marks[0].answerType).toBe('long')
+      expect(r.marks[0].choices).toEqual([])
+    })
+
+    it('addFreeQuestion defaults answerType to long and choices to empty', () => {
+      const r = addFreeQuestion(state)
+      expect(r.freeQuestions[0].answerType).toBe('long')
+      expect(r.freeQuestions[0].choices).toEqual([])
+    })
+
+    it('updateMarkAnswerType switches to choice and initializes 4 choices', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = updateMarkAnswerType(r1, r1.marks[0].id, 'choice')
+      expect(r2.marks[0].answerType).toBe('choice')
+      expect(r2.marks[0].choices).toEqual(['', '', '', ''])
+    })
+
+    it('updateMarkAnswerType from choice to short clears choices', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = updateMarkAnswerType(r1, r1.marks[0].id, 'choice')
+      const r3 = updateMarkAnswerType(r2, r2.marks[0].id, 'short')
+      expect(r3.marks[0].answerType).toBe('short')
+      expect(r3.marks[0].choices).toEqual([])
+    })
+
+    it('updateFreeQuestionAnswerType switches to choice and initializes choices', () => {
+      const r1 = addFreeQuestion(state)
+      const id = r1.freeQuestions[0].id
+      const r2 = updateFreeQuestionAnswerType(r1, id, 'choice')
+      expect(r2.freeQuestions[0].answerType).toBe('choice')
+      expect(r2.freeQuestions[0].choices).toEqual(['', '', '', ''])
+    })
+
+    it('updateFreeQuestionAnswerType from choice to word clears choices', () => {
+      const r1 = addFreeQuestion(state)
+      const id = r1.freeQuestions[0].id
+      const r2 = updateFreeQuestionAnswerType(r1, id, 'choice')
+      const r3 = updateFreeQuestionAnswerType(r2, id, 'word')
+      expect(r3.freeQuestions[0].choices).toEqual([])
+    })
+  })
+
+  describe('choices', () => {
+    it('updateMarkChoice updates a specific choice', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = updateMarkAnswerType(r1, r1.marks[0].id, 'choice')
+      const r3 = updateMarkChoice(r2, r2.marks[0].id, 1, 'テスト')
+      expect(r3.marks[0].choices[1]).toBe('テスト')
+      expect(r3.marks[0].choices[0]).toBe('')
+    })
+
+    it('updateFreeQuestionChoice updates a specific choice', () => {
+      const r1 = addFreeQuestion(state)
+      const id = r1.freeQuestions[0].id
+      const r2 = updateFreeQuestionAnswerType(r1, id, 'choice')
+      const r3 = updateFreeQuestionChoice(r2, id, 2, '選択肢C')
+      expect(r3.freeQuestions[0].choices[2]).toBe('選択肢C')
+    })
+
+    it('addMarkChoice adds a choice up to max 6', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = updateMarkAnswerType(r1, r1.marks[0].id, 'choice')
+      expect(r2.marks[0].choices).toHaveLength(4)
+      const r3 = addMarkChoice(r2, r2.marks[0].id)
+      expect(r3.marks[0].choices).toHaveLength(5)
+      const r4 = addMarkChoice(r3, r3.marks[0].id)
+      expect(r4.marks[0].choices).toHaveLength(6)
+      // At max, should not add more
+      const r5 = addMarkChoice(r4, r4.marks[0].id)
+      expect(r5.marks[0].choices).toHaveLength(6)
+    })
+
+    it('addFreeQuestionChoice adds a choice up to max 6', () => {
+      const r1 = addFreeQuestion(state)
+      const id = r1.freeQuestions[0].id
+      const r2 = updateFreeQuestionAnswerType(r1, id, 'choice')
+      const r3 = addFreeQuestionChoice(r2, id)
+      expect(r3.freeQuestions[0].choices).toHaveLength(5)
+      const r4 = addFreeQuestionChoice(r3, id)
+      expect(r4.freeQuestions[0].choices).toHaveLength(6)
+      const r5 = addFreeQuestionChoice(r4, id)
+      expect(r5.freeQuestions[0].choices).toHaveLength(6)
+    })
+
+    it('removeMarkChoice removes a choice down to min 2', () => {
+      const r1 = addMark(state, 0, 3)
+      if (isError(r1)) throw new Error('unexpected')
+      const r2 = updateMarkAnswerType(r1, r1.marks[0].id, 'choice')
+      // 4 choices, remove index 0
+      const r3 = removeMarkChoice(r2, r2.marks[0].id, 0)
+      expect(r3.marks[0].choices).toHaveLength(3)
+      const r4 = removeMarkChoice(r3, r3.marks[0].id, 0)
+      expect(r4.marks[0].choices).toHaveLength(2)
+      // At min, should not remove more
+      const r5 = removeMarkChoice(r4, r4.marks[0].id, 0)
+      expect(r5.marks[0].choices).toHaveLength(2)
+    })
+
+    it('removeFreeQuestionChoice removes a choice down to min 2', () => {
+      const r1 = addFreeQuestion(state)
+      const id = r1.freeQuestions[0].id
+      const r2 = updateFreeQuestionAnswerType(r1, id, 'choice')
+      const r3 = removeFreeQuestionChoice(r2, id, 0)
+      expect(r3.freeQuestions[0].choices).toHaveLength(3)
+      const r4 = removeFreeQuestionChoice(r3, id, 0)
+      expect(r4.freeQuestions[0].choices).toHaveLength(2)
+      const r5 = removeFreeQuestionChoice(r4, id, 0)
+      expect(r5.freeQuestions[0].choices).toHaveLength(2)
     })
   })
 })
