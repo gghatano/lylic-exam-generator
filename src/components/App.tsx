@@ -20,6 +20,9 @@ function App() {
   const textLayerRef = useRef<HTMLDivElement | null>(null)
   const overlayRef = useRef<SVGSVGElement | null>(null)
 
+  const [viewMode, setViewMode] = useState<'columns' | 'tabs'>(() =>
+    window.innerWidth <= 768 ? 'tabs' : 'columns',
+  )
   const [activeTab, setActiveTab] = useState<MobileTab>('preview')
   const [popup, setPopup] = useState<{ x: number; y: number; start: number; end: number } | null>(
     null,
@@ -131,7 +134,21 @@ function App() {
   }, [])
 
   return (
-    <div className="app" data-active-tab={activeTab}>
+    <div className="app" data-active-tab={activeTab} data-view-mode={viewMode}>
+      <div className="view-mode-toggle">
+        <button
+          className={viewMode === 'columns' ? 'active' : ''}
+          onClick={() => setViewMode('columns')}
+        >
+          3列表示
+        </button>
+        <button
+          className={viewMode === 'tabs' ? 'active' : ''}
+          onClick={() => setViewMode('tabs')}
+        >
+          タブ表示
+        </button>
+      </div>
       <div className="mobile-tabs">
         <button
           className={activeTab === 'input' ? 'active' : ''}
